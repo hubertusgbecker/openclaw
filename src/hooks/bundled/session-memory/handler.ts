@@ -8,15 +8,16 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type { HookHandler } from "../../hooks.js";
 import { resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
+import { resolveStateDir } from "../../../config/paths.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
 import { resolveHookConfig } from "../../config.js";
+import { generateSlugViaLLM } from "../../llm-slug-generator.js";
 
-const log = createSubsystemLogger("session-memory");
+const log = createSubsystemLogger("hooks/session-memory");
 
 /**
  * Read recent messages from session file for slug generation
@@ -79,7 +80,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
     const agentId = resolveAgentIdFromSessionKey(event.sessionKey);
     const workspaceDir = cfg
       ? resolveAgentWorkspaceDir(cfg, agentId)
-      : path.join(os.homedir(), ".openclaw", "workspace");
+      : path.join(resolveStateDir(process.env, os.homedir), "workspace");
     const memoryDir = path.join(workspaceDir, "memory");
     await fs.mkdir(memoryDir, { recursive: true });
 
@@ -95,9 +96,17 @@ const saveSessionToMemory: HookHandler = async (event) => {
     const currentSessionId = sessionEntry.sessionId as string;
     const currentSessionFile = sessionEntry.sessionFile as string;
 
+<<<<<<< HEAD
     log.debug(`Current sessionId: ${currentSessionId}`);
     log.debug(`Current sessionFile: ${currentSessionFile}`);
     log.debug(`cfg present: ${!!cfg}`);
+=======
+    log.debug("Session context resolved", {
+      sessionId: currentSessionId,
+      sessionFile: currentSessionFile,
+      hasCfg: Boolean(cfg),
+    });
+>>>>>>> upstream/main
 
     const sessionFile = currentSessionFile || undefined;
 
@@ -114,6 +123,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
     if (sessionFile) {
       // Get recent conversation content
       sessionContent = await getRecentSessionContent(sessionFile, messageCount);
+<<<<<<< HEAD
       log.debug(`sessionContent length: ${sessionContent?.length || 0}`);
 
       if (sessionContent && cfg) {
@@ -124,10 +134,23 @@ const saveSessionToMemory: HookHandler = async (event) => {
         const openclawRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
         const slugGenPath = path.join(openclawRoot, "llm-slug-generator.js");
         const { generateSlugViaLLM } = await import(slugGenPath);
+=======
+      log.debug("Session content loaded", {
+        length: sessionContent?.length ?? 0,
+        messageCount,
+      });
+>>>>>>> upstream/main
 
+      // Avoid calling the model provider in unit tests, keep hooks fast and deterministic.
+      if (sessionContent && cfg && !process.env.VITEST && process.env.NODE_ENV !== "test") {
+        log.debug("Calling generateSlugViaLLM...");
         // Use LLM to generate a descriptive slug
         slug = await generateSlugViaLLM({ sessionContent, cfg });
+<<<<<<< HEAD
         log.debug(`Generated slug: ${slug ?? "null"}`);
+=======
+        log.debug("Generated slug", { slug });
+>>>>>>> upstream/main
       }
     }
 
@@ -135,14 +158,25 @@ const saveSessionToMemory: HookHandler = async (event) => {
     if (!slug) {
       const timeSlug = now.toISOString().split("T")[1].split(".")[0].replace(/:/g, "");
       slug = timeSlug.slice(0, 4); // HHMM
+<<<<<<< HEAD
       log.debug(`Using fallback timestamp slug: ${slug}`);
+=======
+      log.debug("Using fallback timestamp slug", { slug });
+>>>>>>> upstream/main
     }
 
     // Create filename with date and slug
     const filename = `${dateStr}-${slug}.md`;
     const memoryFilePath = path.join(memoryDir, filename);
+<<<<<<< HEAD
     log.debug(`Generated filename: ${filename}`);
     log.debug(`Full path: ${memoryFilePath}`);
+=======
+    log.debug("Memory file path resolved", {
+      filename,
+      path: memoryFilePath.replace(os.homedir(), "~"),
+    });
+>>>>>>> upstream/main
 
     // Format time as HH:MM:SS UTC
     const timeStr = now.toISOString().split("T")[1].split(".")[0];
@@ -176,9 +210,21 @@ const saveSessionToMemory: HookHandler = async (event) => {
     const relPath = memoryFilePath.replace(os.homedir(), "~");
     log.info(`Session context saved to ${relPath}`);
   } catch (err) {
+<<<<<<< HEAD
     log.error(
       `[session-memory] Failed to save session memory: ${err instanceof Error ? err.message : String(err)}`,
     );
+=======
+    if (err instanceof Error) {
+      log.error("Failed to save session memory", {
+        errorName: err.name,
+        errorMessage: err.message,
+        stack: err.stack,
+      });
+    } else {
+      log.error("Failed to save session memory", { error: String(err) });
+    }
+>>>>>>> upstream/main
   }
 };
 
