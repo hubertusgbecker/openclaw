@@ -344,8 +344,29 @@ export function createOpenClawReadTool(base: AnyAgentTool): AnyAgentTool {
         normalized ??
         (params && typeof params === "object" ? (params as Record<string, unknown>) : undefined);
       assertRequiredParams(record, CLAUDE_PARAM_GROUPS.read, base.name);
-      const result = await base.execute(toolCallId, normalized ?? params, signal);
       const filePath = typeof record?.path === "string" ? String(record.path) : "<unknown>";
+      let result: AgentToolResult<unknown>;
+      try {
+        result = await base.execute(toolCallId, normalized ?? params, signal);
+      } catch (error: unknown) {
+        // Handle EISDIR: model tried to read a directory; guide it to use `ls` instead.
+        if (
+          error instanceof Error &&
+          "code" in error &&
+          (error as NodeJS.ErrnoException).code === "EISDIR"
+        ) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `"${filePath}" is a directory, not a file. Use the ls tool instead: ls {"path": "${filePath}"}`,
+              },
+            ],
+            details: undefined,
+          };
+        }
+        throw error;
+      }
       const normalizedResult = await normalizeReadImageResult(result, filePath);
       return sanitizeToolResultImages(normalizedResult, `read:${filePath}`);
     },
