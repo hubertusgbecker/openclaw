@@ -100,6 +100,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.fetch.maxChars": "Web Fetch Max Chars",
   "tools.web.fetch.timeoutSeconds": "Web Fetch Timeout (sec)",
   "tools.web.fetch.cacheTtlMinutes": "Web Fetch Cache TTL (min)",
+  "tools.web.fetch.allowPrivateNetwork": "Allow Private Network Fetch",
   "tools.web.fetch.maxRedirects": "Web Fetch Max Redirects",
   "tools.web.fetch.userAgent": "Web Fetch User-Agent",
   "gateway.controlUi.basePath": "Control UI Base Path",

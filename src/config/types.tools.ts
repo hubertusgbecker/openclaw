@@ -402,6 +402,8 @@ export type ToolsConfig = {
       userAgent?: string;
       /** Use Readability to extract main content (default: true). */
       readability?: boolean;
+      /** Allow fetching from private/internal network IPs (default: false). */
+      allowPrivateNetwork?: boolean;
       firecrawl?: {
         /** Enable Firecrawl fallback (default: true when apiKey is set). */
         enabled?: boolean;

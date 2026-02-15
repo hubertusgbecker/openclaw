@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { AnyAgentTool } from "./common.js";
 import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
-import { SsrFBlockedError } from "../../infra/net/ssrf.js";
+import { SsrFBlockedError, type SsrFPolicy } from "../../infra/net/ssrf.js";
 import { logDebug } from "../../logger.js";
 import { wrapExternalContent, wrapWebContent } from "../../security/external-content.js";
 import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
@@ -418,6 +418,7 @@ async function runWebFetch(params: {
   cacheTtlMs: number;
   userAgent: string;
   readabilityEnabled: boolean;
+  ssrfPolicy?: SsrFPolicy;
   firecrawlEnabled: boolean;
   firecrawlApiKey?: string;
   firecrawlBaseUrl: string;
@@ -454,6 +455,7 @@ async function runWebFetch(params: {
       url: params.url,
       maxRedirects: params.maxRedirects,
       timeoutMs: params.timeoutSeconds * 1000,
+      policy: params.ssrfPolicy,
       init: {
         headers: {
           Accept: "text/markdown, text/html;q=0.9, */*;q=0.1",
@@ -692,6 +694,10 @@ export function createWebFetchTool(options?: {
     firecrawl?.timeoutSeconds ?? fetch?.timeoutSeconds,
     DEFAULT_TIMEOUT_SECONDS,
   );
+  const ssrfPolicy: SsrFPolicy | undefined =
+    fetch && "allowPrivateNetwork" in fetch && fetch.allowPrivateNetwork
+      ? { allowPrivateNetwork: true }
+      : undefined;
   const userAgent =
     (fetch && "userAgent" in fetch && typeof fetch.userAgent === "string" && fetch.userAgent) ||
     DEFAULT_FETCH_USER_AGENT;
@@ -720,6 +726,7 @@ export function createWebFetchTool(options?: {
         cacheTtlMs: resolveCacheTtlMs(fetch?.cacheTtlMinutes, DEFAULT_CACHE_TTL_MINUTES),
         userAgent,
         readabilityEnabled,
+        ssrfPolicy,
         firecrawlEnabled,
         firecrawlApiKey,
         firecrawlBaseUrl,
