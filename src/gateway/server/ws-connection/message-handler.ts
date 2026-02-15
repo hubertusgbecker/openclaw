@@ -430,7 +430,12 @@ export function attachGatewayWsMessageHandler(params: {
           close(1008, truncateCloseReason(authMessage));
         };
         if (!device) {
-          if (scopes.length > 0) {
+          // When no device identity is present, default-deny: clear scopes to
+          // avoid self-declared permissions without cryptographic proof.
+          // Exception: when the operator explicitly opted into insecure/bypass
+          // auth for the Control UI **and** the shared secret is correct, honor
+          // the requested scopes — the token/password is the proof.
+          if (scopes.length > 0 && !(allowControlUiBypass && sharedAuthOk)) {
             scopes = [];
             connectParams.scopes = scopes;
           }
